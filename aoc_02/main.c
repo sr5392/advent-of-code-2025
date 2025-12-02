@@ -3,7 +3,7 @@
 #include <string.h>
 
 bool is_valid_id(const unsigned long id) {
-    char buffer[16] = {0};
+    char buffer[32] = {0};
     snprintf(buffer, sizeof(buffer), "%lu", id);
     const size_t id_length = strlen(buffer);
     if ((id_length % 2) != 0)
@@ -21,12 +21,12 @@ bool is_valid_id(const unsigned long id) {
 }
 
 bool is_valid_id_2(const unsigned long id) {
-    char buffer[16] = {0};
+    char buffer[32] = {0};
     snprintf(buffer, sizeof(buffer), "%lu", id);
     const size_t id_length = strlen(buffer);
     if (id_length < 2)
         return true;
-    char buffer_search[16] = {0};
+    char buffer_search[32] = {0};
     size_t search_length = 0;
     bool invalid = false;
     for (size_t i = 0; i < (id_length / 2); ++i) {

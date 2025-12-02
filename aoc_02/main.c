@@ -6,7 +6,7 @@ bool is_valid_id(const unsigned long id) {
     char buffer[32] = {0};
     snprintf(buffer, sizeof(buffer), "%lu", id);
     const size_t id_length = strlen(buffer);
-    if ((id_length % 2) != 0)
+    if (id_length % 2 != 0)
         return true;
     char* buffer_begin = &buffer[0];
     char* buffer_mid = &buffer[(id_length / 2)];
@@ -26,35 +26,29 @@ bool is_valid_id_2(const unsigned long id) {
     const size_t id_length = strlen(buffer);
     if (id_length < 2)
         return true;
-    char buffer_search[32] = {0};
-    size_t search_length = 0;
-    bool invalid = false;
-    for (size_t i = 0; i < (id_length / 2); ++i) {
-        strncpy(buffer_search, buffer, i + 1);
-        search_length = i + 1;
+    for (size_t i = 1; i <= id_length / 2; ++i) {
+        const size_t search_length = i;
         if (id_length % search_length != 0) {
             continue;
         }
-        size_t k = 0;
-        bool match = true;
+        bool invalid = true;
         for (size_t j = 0; j < id_length; ++j) {
-            if (buffer[j] != buffer_search[k]) {
-                match = false;
+            if (buffer[j] != buffer[j % search_length]) {
+                invalid = false;
                 break;
             }
-            k = (k + 1) % search_length;
         }
-        if (match) {
-            invalid = match;
-            break;
+        if (invalid) {
+            return false;
         }
     }
-    return !invalid;
+    return true;
 }
 
 unsigned long sum_invalid_ids(bool (*is_valid_id)(unsigned long)) {
     FILE* fp = fopen("./input.txt", "r");
     if (!fp) {
+        perror("Unable to open file");
         exit(EXIT_FAILURE);
     }
     unsigned long sum = 0;

@@ -11,10 +11,10 @@ int peek(FILE* fp) {
 
 int get_joltage(char* buffer_line) {
     int joltage = 0;
-    size_t line_length = strlen(buffer_line);
+    const size_t line_length = strlen(buffer_line);
     int digit_1 = 0;
     int digit_2 = 0;
-    char* left_bound = buffer_line;
+    const char* left_bound = buffer_line;
     for (size_t i = 0; i < line_length - 1; ++i) {
         const int tmp_digit_1 = buffer_line[i] - '0';
         if (tmp_digit_1 > digit_1) {
@@ -42,7 +42,7 @@ int get_total_joltage(void) {
     while (true) {
         size_t index = 0;
         char buffer_line[256] = {0};
-        int c = peek(fp);
+        const int c = peek(fp);
         if (c == EOF) {
             if (feof(fp))
                 break;
@@ -59,9 +59,13 @@ int get_total_joltage(void) {
             printf("Invalid file format");
             exit(EXIT_FAILURE);
         }
-        while (isdigit(peek(fp)) && index < sizeof(buffer_line) - 1) {
+        while (isdigit(peek(fp))) {
             buffer_line[index] = (char) fgetc(fp);
             ++index;
+            if (index >= sizeof(buffer_line) - 1) {
+                printf("Buffer size exceeded!");
+                exit(EXIT_FAILURE);
+            }
         }
         total_joltage += get_joltage(buffer_line);
     }

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 int peek(FILE* fp) {
     const int c = fgetc(fp);
@@ -9,8 +10,8 @@ int peek(FILE* fp) {
     return c;
 }
 
-int get_joltage(char* buffer_line) {
-    int joltage = 0;
+unsigned long get_joltage(const char* buffer_line) {
+    unsigned long joltage = 0;
     const size_t line_length = strlen(buffer_line);
     int digit_1 = 0;
     int digit_2 = 0;
@@ -32,13 +33,33 @@ int get_joltage(char* buffer_line) {
     return joltage;
 }
 
-int get_total_joltage(void) {
+unsigned long get_joltage_2(const char* buffer_line) {
+    unsigned long joltage = 0;
+    const size_t line_length = strlen(buffer_line);
+    size_t left_bound = 0;
+    size_t right_bound = line_length - 11;
+    for (int i = 11; i >= 0; --i) {
+        int digit = 0;
+        for (size_t j = left_bound; j < right_bound; ++j) {
+            const int tmp_digit = buffer_line[j] - '0';
+            if (tmp_digit > digit) {
+                digit = tmp_digit;
+                left_bound = j + 1;
+            }
+        }
+        right_bound++;
+        joltage += (unsigned long) pow(10, i) * digit;
+    }
+    return joltage;
+}
+
+unsigned long get_total_joltage(unsigned long (*get_joltage)(const char*)) {
     FILE* fp = fopen("./input.txt", "r");
     if (!fp) {
         perror("Unable to open file");
         exit(EXIT_FAILURE);
     }
-    int total_joltage = 0;
+    unsigned long total_joltage = 0;
     while (true) {
         size_t index = 0;
         char buffer_line[256] = {0};
@@ -72,11 +93,16 @@ int get_total_joltage(void) {
     return total_joltage;
 }
 
-int part_1(void) {
-    return get_total_joltage();
+unsigned long part_1(void) {
+    return get_total_joltage(get_joltage);
+}
+
+unsigned long part_2(void) {
+    return get_total_joltage(get_joltage_2);
 }
 
 int main(void) {
-    printf("%d\n", part_1());
+    printf("%lu\n", part_1());
+    printf("%lu\n", part_2());
     return 0;
 }

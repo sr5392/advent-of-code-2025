@@ -4,3 +4,4 @@ project(aoc_03 C)
 set(CMAKE_C_STANDARD 23)
 
 add_executable(aoc_03 main.c)
+target_link_libraries(aoc_03 m)

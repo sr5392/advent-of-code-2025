@@ -69,6 +69,7 @@ unsigned long get_total_joltage(unsigned long (*get_joltage)(const char*)) {
                 break;
             if (ferror(fp)) {
                 printf("Unable to read file");
+                fclose(fp);
                 exit(EXIT_FAILURE);
             }
         }
@@ -78,6 +79,7 @@ unsigned long get_total_joltage(unsigned long (*get_joltage)(const char*)) {
                 continue;
             }
             printf("Invalid file format");
+            fclose(fp);
             exit(EXIT_FAILURE);
         }
         while (isdigit(peek(fp))) {
@@ -85,11 +87,13 @@ unsigned long get_total_joltage(unsigned long (*get_joltage)(const char*)) {
             ++index;
             if (index >= sizeof(buffer_line) - 1) {
                 printf("Buffer size exceeded!");
+                fclose(fp);
                 exit(EXIT_FAILURE);
             }
         }
         total_joltage += get_joltage(buffer_line);
     }
+    fclose(fp);
     return total_joltage;
 }
 

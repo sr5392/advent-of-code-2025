@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 typedef struct {
-    char** data;
+    char* data;
     size_t size_x;
     size_t size_y;
 } Grid;
@@ -11,25 +11,15 @@ Grid init_grid(const size_t size_x, const size_t size_y) {
     Grid grid;
     grid.size_x = size_x;
     grid.size_y = size_y;
-    grid.data = malloc(size_y * sizeof(char*));
+    grid.data = calloc(size_x * size_y,sizeof(char));
     if (!grid.data) {
         printf("Error allocating memory for grid");
         exit(EXIT_FAILURE);
-    }
-    for (int i = 0; i < size_y; ++i) {
-        grid.data[i] = calloc(size_x, sizeof(char));
-        if (!grid.data[i]) {
-            printf("Error allocating memory for grid");
-            exit(EXIT_FAILURE);
-        }
     }
     return grid;
 }
 
 void free_grid(Grid* const grid) {
-    for (int i = 0; i < grid->size_y; ++i) {
-        free(grid->data[i]);
-    }
     free(grid->data);
 }
 
@@ -46,7 +36,7 @@ int count_adjacent_rolls(const Grid* const grid, const int pos_x, const int pos_
         for (int j = pos_x - 1; j <= pos_x + 1; ++j) {
             if (j < 0 || j >= grid->size_x) continue;
             if (i == pos_y && j == pos_x) continue;
-            if (grid->data[i][j] != '@') continue;
+            if (grid->data[i * grid->size_x + j] != '@') continue;
             ++adjacent_count;
         }
     }
@@ -107,7 +97,7 @@ Grid parse_input(void) {
             continue;
         }
         if (c == '.' || c == '@') {
-            grid.data[y][x] = (char) c;
+            grid.data[y * grid_size_x + x] = (char) c;
             ++x;
         }
     }
@@ -120,7 +110,7 @@ int count_accessible_rolls(void) {
     int accessible_count = 0;
     for (int i = 0; i < grid.size_y; ++i) {
         for (int j = 0; j < grid.size_x; ++j) {
-            if (grid.data[i][j] == '.') continue;
+            if (grid.data[i * grid.size_x + j] == '.') continue;
             const int adjacent_count = count_adjacent_rolls(&grid, j, i);
             if (adjacent_count < 4) ++accessible_count;
         }

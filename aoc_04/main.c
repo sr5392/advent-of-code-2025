@@ -11,7 +11,7 @@ Grid init_grid(const size_t size_x, const size_t size_y) {
     Grid grid;
     grid.size_x = size_x;
     grid.size_y = size_y;
-    grid.data = calloc(size_x * size_y,sizeof(char));
+    grid.data = calloc(size_x * size_y, sizeof(char));
     if (!grid.data) {
         printf("Error allocating memory for grid");
         exit(EXIT_FAILURE);
@@ -36,7 +36,7 @@ int count_adjacent_rolls(const Grid* const grid, const int pos_x, const int pos_
         for (int j = pos_x - 1; j <= pos_x + 1; ++j) {
             if (j < 0 || j >= grid->size_x) continue;
             if (i == pos_y && j == pos_x) continue;
-            if (grid->data[i * grid->size_x + j] != '@') continue;
+            if (grid->data[i * grid->size_x + j] != '@' && grid->data[i * grid->size_x + j] != 'x') continue;
             ++adjacent_count;
         }
     }
@@ -62,7 +62,7 @@ Grid parse_input(void) {
                 printf("Invalid file format");
                 exit(EXIT_FAILURE);
             }
-            if (line_length > grid_size_x)  grid_size_x = line_length;
+            if (line_length > grid_size_x) grid_size_x = line_length;
             line_length = 0;
             ++grid_size_y;
             if (peek(fp) != '.' && peek(fp) != '@' && peek(fp) != EOF) {
@@ -105,25 +105,62 @@ Grid parse_input(void) {
     return grid;
 }
 
-int count_accessible_rolls(void) {
-    Grid grid = parse_input();
+int count_accessible_rolls(Grid* const grid) {
     int accessible_count = 0;
-    for (int i = 0; i < grid.size_y; ++i) {
-        for (int j = 0; j < grid.size_x; ++j) {
-            if (grid.data[i * grid.size_x + j] == '.') continue;
-            const int adjacent_count = count_adjacent_rolls(&grid, j, i);
+    for (int i = 0; i < grid->size_y; ++i) {
+        for (int j = 0; j < grid->size_x; ++j) {
+            if (grid->data[i * grid->size_x + j] == '.') continue;
+            const int adjacent_count = count_adjacent_rolls(grid, j, i);
             if (adjacent_count < 4) ++accessible_count;
         }
     }
+    return accessible_count;
+}
+
+void remove_accessible_rolls(Grid* const grid) {
+    for (int i = 0; i < grid->size_y; ++i) {
+        for (int j = 0; j < grid->size_x; ++j) {
+            if (grid->data[i * grid->size_x + j] == 'x')
+                grid->data[i * grid->size_x + j] = '.';
+        }
+    }
+}
+
+int count_accessible_rolls_2(Grid* const grid) {
+    int accessible_count = 0;
+    for (int i = 0; i < grid->size_y; ++i) {
+        for (int j = 0; j < grid->size_x; ++j) {
+            if (grid->data[i * grid->size_x + j] == '.') continue;
+            const int adjacent_count = count_adjacent_rolls(grid, j, i);
+            if (adjacent_count < 4) {
+                ++accessible_count;
+                grid->data[i * grid->size_x + j] = 'x';
+            }
+        }
+    }
+    remove_accessible_rolls(grid);
+    if (accessible_count == 0) return accessible_count;
+    return accessible_count + count_accessible_rolls_2(grid);
+}
+
+int part_1(void) {
+    int accessible_count = 0;
+    Grid grid = parse_input();
+    accessible_count = count_accessible_rolls(&grid);
     free_grid(&grid);
     return accessible_count;
 }
 
-int part_1(void) {
-    return count_accessible_rolls();
+int part_2(void) {
+    int accessible_count = 0;
+    Grid grid = parse_input();
+    accessible_count = count_accessible_rolls_2(&grid);
+    free_grid(&grid);
+    return accessible_count;
 }
 
 int main(void) {
     printf("Part 1: %d\n", part_1());
+    printf("Part 2: %d\n", part_2());
     return 0;
 }

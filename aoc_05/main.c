@@ -53,16 +53,76 @@ int count_valid_ids(const Linked_List* list_id_ranges, const Linked_List* list_i
     while (entry_ids) {
         Linked_List_Entry* entry_id_ranges = list_id_ranges->head;
         while (entry_id_ranges) {
-            unsigned long id = *(unsigned long*) entry_ids->value;
-            unsigned long range_min = ((ID_Range*) entry_id_ranges->value)->min;
-            unsigned long range_max = ((ID_Range*) entry_id_ranges->value)->max;
+            const unsigned long id = *(unsigned long*) entry_ids->value;
+            const unsigned long range_min = ((ID_Range*) entry_id_ranges->value)->min;
+            const unsigned long range_max = ((ID_Range*) entry_id_ranges->value)->max;
             entry_id_ranges = entry_id_ranges->next;
             if (id >= range_min && id <= range_max) {
                 ++valid_id_count;
-                entry_id_ranges = NULL;
+                break;
             }
         }
         entry_ids = entry_ids->next;
+    }
+    return valid_id_count;
+}
+
+int comp_id_range(const void* a, const void* b) {
+    const unsigned long arg_1 = (*(ID_Range**) a)->min;
+    const unsigned long arg_2 = (*(ID_Range**) b)->min;
+    if (arg_1 < arg_2) return -1;
+    if (arg_1 > arg_2) return 1;
+    return 0;
+}
+
+void qsort_id_ranges(Linked_List* list_id_ranges) {
+    ID_Range* id_ranges[list_id_ranges->size];
+    Linked_List_Entry* curr = list_id_ranges->head;
+    for (size_t i = 0; i < list_id_ranges->size; ++i) {
+        id_ranges[i] = (ID_Range*) curr->value;
+        curr = curr->next;
+    }
+    qsort(id_ranges, list_id_ranges->size, sizeof(ID_Range*), comp_id_range);
+    curr = list_id_ranges->head;
+    for (size_t i = 0; i < list_id_ranges->size; ++i) {
+        curr->value = id_ranges[i];
+        curr = curr->next;
+    }
+}
+
+void reduce_id_ranges(Linked_List* list_id_ranges) {
+    qsort_id_ranges(list_id_ranges);
+    Linked_List_Entry* curr = list_id_ranges->head;
+    while (curr) {
+        Linked_List_Entry* next = curr->next;
+        unsigned long* curr_range_max = &((ID_Range*) curr->value)->max;
+        while (next) {
+            const unsigned long* next_range_min = &((ID_Range*) next->value)->min;
+            const unsigned long* next_range_max = &((ID_Range*) next->value)->max;
+            if (*curr_range_max >= *next_range_min) {
+                if (*curr_range_max < *next_range_max) *curr_range_max = *next_range_max;
+                curr->next = next->next;
+                if (next->next) next->next->prev = curr;
+                free(next->value);
+                free(next);
+                next = curr->next;
+                continue;
+            }
+            next = next->next;
+        }
+        curr = curr->next;
+    }
+}
+
+unsigned long count_all_valid_ids(Linked_List* list_id_ranges) {
+    unsigned long valid_id_count = 0;
+    reduce_id_ranges(list_id_ranges);
+    Linked_List_Entry* entry_id_ranges = list_id_ranges->head;
+    while (entry_id_ranges) {
+        unsigned long curr_range_min = ((ID_Range*) entry_id_ranges->value)->min;
+        unsigned long curr_range_max = ((ID_Range*) entry_id_ranges->value)->max;
+        valid_id_count += curr_range_max - curr_range_min + 1;
+        entry_id_ranges = entry_id_ranges->next;
     }
     return valid_id_count;
 }
@@ -77,7 +137,18 @@ int part_1(void) {
     return valid_id_count;
 }
 
+unsigned long part_2(void) {
+    Linked_List* list_id_ranges = linked_list_init();
+    Linked_List* list_ids = linked_list_init();
+    parse_intput(list_id_ranges, list_ids);
+    const unsigned long valid_id_count = count_all_valid_ids(list_id_ranges);
+    linked_list_destroy_full(list_id_ranges, free);
+    linked_list_destroy_full(list_ids, free);
+    return valid_id_count;
+}
+
 int main(void) {
     printf("Part 1: %d\n", part_1());
+    printf("Part 2: %lu\n", part_2());
     return 0;
 }

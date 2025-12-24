@@ -103,6 +103,7 @@ void reduce_id_ranges(Linked_List* list_id_ranges) {
                 if (*curr_range_max < *next_range_max) *curr_range_max = *next_range_max;
                 curr->next = next->next;
                 if (next->next) next->next->prev = curr;
+                --list_id_ranges->size;
                 free(next->value);
                 free(next);
                 next = curr->next;

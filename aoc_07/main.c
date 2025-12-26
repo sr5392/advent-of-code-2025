@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ucontext.h>
 
 typedef struct {
     size_t size_x;
@@ -10,7 +11,7 @@ typedef struct {
 
 void print_grid(const Grid* grid) {
     for (size_t y = 0; y < grid->size_y; ++y) {
-        for (size_t x= 0; x < grid->size_x; ++x) {
+        for (size_t x = 0; x < grid->size_x; ++x) {
             printf("%c", grid->data[y][x]);
         }
         printf("\n");
@@ -19,7 +20,7 @@ void print_grid(const Grid* grid) {
 
 Grid parse_input() {
     Grid grid = {0};
-    FILE* fp = fopen("input_test.txt", "r");
+    FILE* fp = fopen("input.txt", "r");
     if (!fp) {
         fprintf(stderr, "Unable to open file");
         exit(EXIT_FAILURE);
@@ -98,9 +99,35 @@ void destroy_grid(Grid* grid) {
     free(grid->data);
 }
 
-int main(void) {
+unsigned long get_beam_splits(Grid* grid) {
+    unsigned long split_count = 0;
+    for (size_t y = 1; y < grid->size_y; ++y) {
+        for (size_t x = 0; x < grid->size_x; ++x) {
+            if (grid->data[y - 1][x] == 'S' || grid->data[y - 1][x] == '|') {
+                if (grid->data[y][x] == '^') {
+                    if (x > 0) grid->data[y][x - 1] = '|';
+                    if (x < grid->size_x - 1) grid->data[y][x + 1] = '|';
+                    ++split_count;
+                    continue;
+                }
+                if (grid->data[y][x] == '.') {
+                    grid->data[y][x] = '|';
+                }
+            }
+        }
+    }
+    return split_count;
+}
+
+unsigned long part_1(void) {
     Grid grid = parse_input();
+    const unsigned long beam_splits = get_beam_splits(&grid);
     print_grid(&grid);
     destroy_grid(&grid);
+    return beam_splits;
+}
+
+int main(void) {
+    printf("%lu\n", part_1());
     return 0;
 }

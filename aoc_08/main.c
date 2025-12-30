@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 
 #include "linked_list.h"
 
@@ -241,6 +242,79 @@ Circuits map_circuits(const Junction_Boxes jbs, Junction_Box_Distances jbds) {
     return ret_crcts;
 }
 
+unsigned long get_wall_distance(const Junction_Boxes jbs, Junction_Box_Distances jbds) {
+    Junction_Box_Circuits jbcrcts = {0};
+    jbcrcts.size = jbs.size;
+    jbcrcts.jbcrcts = calloc(jbcrcts.size, sizeof(Junction_Box_Circuit));
+    if (!jbcrcts.jbcrcts) {
+        fprintf(stderr, "Error allocating junction box circuits");
+        exit(EXIT_FAILURE);
+    }
+    Linked_List* crcts = linked_list_init();
+    size_t crcts_idx = 1;
+    for (size_t i = 0; i < jbds.size; ++i) {
+        if (crcts->size == 1 && ((Linked_List*) crcts->head->value)->size == jbs.size) {
+            return jbs.boxes[jbds.jbds[i - 1].idx_junction_box_a].pos_x * jbs.boxes[jbds.jbds[i - 1].idx_junction_box_b].pos_x;
+        }
+        const size_t idx_jbcrct_a = jbcrcts.jbcrcts[jbds.jbds[i].idx_junction_box_a].crct_idx;
+        const size_t idx_jbcrct_b = jbcrcts.jbcrcts[jbds.jbds[i].idx_junction_box_b].crct_idx;
+        if (idx_jbcrct_a == 0 && idx_jbcrct_b == 0) {
+            Linked_List* crct = linked_list_init();
+            linked_list_append_item(crct, &jbs.boxes[jbds.jbds[i].idx_junction_box_a]);
+            linked_list_append_item(crct, &jbs.boxes[jbds.jbds[i].idx_junction_box_b]);
+            jbcrcts.jbcrcts[jbds.jbds[i].idx_junction_box_a].crct_idx = crcts_idx;
+            jbcrcts.jbcrcts[jbds.jbds[i].idx_junction_box_b].crct_idx = crcts_idx;
+            linked_list_append_item(crcts, crct);
+            ++crcts_idx;
+            continue;
+        }
+        if (idx_jbcrct_a != 0 && idx_jbcrct_b == 0) {
+            linked_list_append_item(linked_list_get_item(crcts, idx_jbcrct_a - 1), &jbs.boxes[jbds.jbds[i].idx_junction_box_b]);
+            jbcrcts.jbcrcts[jbds.jbds[i].idx_junction_box_b].crct_idx = jbcrcts.jbcrcts[jbds.jbds[i].idx_junction_box_a].crct_idx;
+            continue;
+        }
+        if (idx_jbcrct_a == 0 && idx_jbcrct_b != 0) {
+            linked_list_append_item(linked_list_get_item(crcts,idx_jbcrct_b - 1), &jbs.boxes[jbds.jbds[i].idx_junction_box_a]);
+            jbcrcts.jbcrcts[jbds.jbds[i].idx_junction_box_a].crct_idx = jbcrcts.jbcrcts[jbds.jbds[i].idx_junction_box_b].crct_idx;
+            continue;
+        }
+        if (idx_jbcrct_a != 0 && idx_jbcrct_b != 0) {
+            if (idx_jbcrct_a == idx_jbcrct_b) continue;
+            Linked_List* list_a;
+            Linked_List* list_b;
+            size_t new_crct_index;
+            size_t old_crct_index;
+            if (idx_jbcrct_a > idx_jbcrct_b) {
+                list_a = linked_list_get_item(crcts, idx_jbcrct_b - 1);
+                list_b = linked_list_get_item(crcts, idx_jbcrct_a - 1);
+                old_crct_index = idx_jbcrct_a;
+                new_crct_index = idx_jbcrct_b;
+            } else {
+                list_a = linked_list_get_item(crcts, idx_jbcrct_a - 1);
+                list_b = linked_list_get_item(crcts, idx_jbcrct_b - 1);
+                old_crct_index = idx_jbcrct_b;
+                new_crct_index = idx_jbcrct_a;
+            }
+            Linked_List_Entry* curr = list_b->head;
+            while (curr) {
+                linked_list_append_item(list_a, curr->value);
+                curr = curr->next;
+            }
+            linked_list_remove_item(crcts, old_crct_index - 1);
+            for (size_t j = 0; j < jbcrcts.size; ++j) {
+                if (jbcrcts.jbcrcts[j].crct_idx == old_crct_index) {
+                    jbcrcts.jbcrcts[j].crct_idx = new_crct_index;
+                    continue;
+                }
+                if (jbcrcts.jbcrcts[j].crct_idx > old_crct_index)
+                    jbcrcts.jbcrcts[j].crct_idx = jbcrcts.jbcrcts[j].crct_idx - 1;
+            }
+            --crcts_idx;
+        }
+    }
+    return 0;
+}
+
 void print_circuits(Circuits crcts) {
     for (int i = 0; i < crcts.size; ++i) {
         Linked_List_Entry* curr = crcts.circuits[i]->head;
@@ -278,7 +352,17 @@ int part_1(void) {
     return crct_size;
 }
 
+unsigned long part_2(void) {
+    Junction_Boxes jbs = parse_input();
+    Junction_Box_Distances jbds = map_junction_box_distances(jbs);
+    const unsigned long wall_distance = get_wall_distance(jbs, jbds);
+    free(jbds.jbds);
+    free(jbs.boxes);
+    return wall_distance;
+}
+
 int main(void) {
     printf("%d\n", part_1());
+    printf("%lu\n", part_2());
     return 0;
 }
